@@ -1,0 +1,29 @@
+{
+  "name": "regres",
+  "version": "0.1.2",
+  "engines": {
+    "node": "^8.0.0"
+  },
+  "author": "Samuel Julius Horwitz <samuel@synumbra.com>",
+  "license": "Apache-2.0",
+  "bin": {
+    "regres": "./bin/regres"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com:samuelhorwitz/regres.git"
+  },
+  "main": "./src/decorators.js",
+  "dependencies": {
+    "babel-plugin-syntax-decorators": "^6.8.0",
+    "babel-plugin-transform-decorators-legacy": "^1.3.4",
+    "babel-preset-es2015": "^6.9.0",
+    "babel-preset-stage-1": "^6.5.0",
+    "babel-register": "^6.11.6",
+    "babelify": "^7.3.0",
+    "browserify": "^13.1.0",
+    "lodash": "^4.17.4",
+    "tmp": "0.0.31",
+    "yargs": "^8.0.2"
+  }
+}

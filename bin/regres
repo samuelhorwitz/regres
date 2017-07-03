@@ -1,0 +1,124 @@
+#!/usr/bin/env node
+
+const path = require('path');
+const tmp = require('tmp');
+const browserify = require('browserify');
+const babelify = require('babelify');
+const fs = require('fs');
+const genSchema = require('../src/gen-schema');
+const {defaults, castArray, mapKeys, camelCase} = require('lodash');
+tmp.setGracefulCleanup();
+
+const argv = require('yargs')
+.command('build <main> [output]', 'build', yargs => {
+    yargs.option('opts.fn-schema', {
+        describe: 'Schema that procedures should be declared on',
+        default: 'regres'
+    });
+
+    yargs.option('opts.boot-schema', {
+        describe: 'Schema that the start script should be declared on',
+        default: 'regres_boot'
+    });
+
+    yargs.option('opts.boot-schema-fn-owner', {
+        describe: 'Owner of the start script',
+        default: 'postgres'
+    });
+
+    yargs.option('opts.boot-schema-owner', {
+        describe: 'Owner of the boot schema',
+        default: 'postgres'
+    });
+
+    yargs.option('opts.fn-schema-owner', {
+        describe: 'Owner of the procedure maintenance schema',
+        default: 'postgres'
+    });
+
+    yargs.option('opts.fn-schema-fn-owner', {
+        describe: 'Owner of the procedures on the procudure maintenance schema',
+        default: 'postgres'
+    });
+
+    yargs.option('opts.public-user', {
+        describe: 'The role that is used for public',
+        default: 'public'
+    });
+
+    yargs.option('opts.regres-global', {
+        describe: 'The global variable all exported procedures are placed on to',
+        default: '$'
+    });
+
+    yargs.option('opts.terminate-exceptions', {
+        describe: 'The roles who should not have their connections terminated upon code installation',
+        default: ['postgres'],
+        type: 'array'
+    });
+
+    yargs.option('babel.plugins', {
+        describe: 'Babel plugins to include',
+        default: [],
+        type: 'array'
+    });
+
+    yargs.option('babel.presets', {
+        describe: 'Babel presets to include',
+        default: [],
+        type: 'array'
+    });
+}, handleBuild)
+.help()
+.wrap(72)
+.argv;
+
+function getOpts(opts) {
+    opts = mapKeys(opts, (v, k) => camelCase(k));
+    opts.terminateExceptions = castArray(opts.terminateExceptions).map(t => `'${t}'`).join(',');
+    return opts;
+}
+
+function mangleMain(mainFile, opts) {
+    var mainFileContents = fs.readFileSync(mainFile, 'utf8'),
+        mainFileMutated = tmp.fileSync({postfix: '.js', dir: path.dirname(mainFile)});
+
+    mainFileContents = mainFileContents.replace(/module\.exports/g, `global.${opts.regresGlobal}`);
+    fs.writeFileSync(mainFileMutated.name, mainFileContents);
+    return mainFileMutated.name;
+}
+
+function handleBuild(argv) {
+    var opts = getOpts(argv.opts);
+    var jsOut = tmp.fileSync();
+    var file = fs.createWriteStream(jsOut.name);
+    var mainFile = path.resolve(process.cwd(), argv.main);
+    var mangledMainFile = mangleMain(mainFile, opts);
+
+    var b = browserify([
+        path.resolve(__dirname, '../src/globals.js'),
+        mangledMainFile
+    ], {
+        transform: [
+            babelify.configure({
+                plugins: [
+                    path.resolve(__dirname, '../src/strip-decorators.js'),
+                    ...(argv.babel.plugins || [])
+                ],
+                presets: [
+                    ...(argv.babel.presets || [])
+                ]
+            })
+        ]
+    })
+    .ignore(path.resolve(__dirname, '../src/decorators.js'))
+    .ignore(path.resolve(__dirname, '../src/decorator-store.js'))
+    .bundle();
+
+    b.pipe(file);
+
+    file.on('finish', () => {
+        var res = genSchema(mainFile, jsOut.name, opts);
+        console.log(res);
+    });
+}
