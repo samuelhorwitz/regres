@@ -13,6 +13,8 @@ function getPGTypeDeclaration(type, {fnSchema, fnSchemaFnOwner}) {
 }
 
 function getPGDeclaration(stub, {fnSchema, fnSchemaFnOwner, publicUser, regresGlobal}) {
+    var customTypeIndices = [];
+
     if (stub.pgRet instanceof Function) {
         stub.pgRet = `${fnSchema}.${stub.pgRet.$$pgTypeId}`;
     }
@@ -21,13 +23,20 @@ function getPGDeclaration(stub, {fnSchema, fnSchemaFnOwner, publicUser, regresGl
         for (let i = 0; i < stub.pgArgs.length; i++) {
             if (stub.pgArgs[i] instanceof Function) {
                 stub.pgArgs[i] = `${fnSchema}.${stub.pgArgs[i].$$pgTypeId}`;
+                customTypeIndices.push(i);
             }
         }
     }
 
     var argsStr = '',
         argNames = stub.fnArgs.map(val => snakeCase(val)),
-        jsArgNames = argNames.map(val => `__camelCaseObj(${val})`).join(', '),
+        jsArgNames = argNames.map((val, i) => {
+            if (customTypeIndices.includes(i)) {
+                return `__camelCaseObj(${val})`;
+            }
+
+            return val;
+        }).join(', '),
         jsArgNamesNoCamel = argNames.join(', '),
         isBytea = stub.pgRet == 'bytea',
         isTrigger = stub.pgRet == 'trigger',
