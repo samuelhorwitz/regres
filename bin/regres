@@ -103,9 +103,12 @@ function handleBuild(argv) {
             babelify.configure({
                 plugins: [
                     path.resolve(__dirname, '../src/strip-decorators.js'),
+                    'transform-decorators-legacy',
                     ...(argv.babel.plugins || [])
                 ],
                 presets: [
+                    'es2015',
+                    'stage-1',
                     ...(argv.babel.presets || [])
                 ]
             })
@@ -118,7 +121,7 @@ function handleBuild(argv) {
     b.pipe(file);
 
     file.on('finish', () => {
-        var res = genSchema(mainFile, jsOut.name, opts);
+        var res = genSchema(mainFile, jsOut.name, opts, argv.babel);
         console.log(res);
     });
 }

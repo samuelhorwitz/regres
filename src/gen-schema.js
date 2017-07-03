@@ -7,7 +7,6 @@
 
 const fs = require('fs');
 const path = require('path');
-require('babel-register');
 const {getImportSQL, neededStubs} = require(path.resolve(__dirname, './decorator-store.js'));
 
 var consoleBackup = {};
@@ -50,7 +49,19 @@ function getSurvivorFns(neededStubs, opts) {
     return fns.join(',');
 }
 
-module.exports = function(mainFile, outFile, opts) {
+module.exports = function(mainFile, outFile, opts, babel) {
+    require('babel-register')({
+        plugins: [
+            'transform-decorators-legacy',
+            ...(babel.plugins || [])
+        ],
+        presets: [
+            'es2015',
+            'stage-1',
+            ...(babel.presets || [])
+        ]
+    });
+
     disableConsole();
     require('./globals');
     require(mainFile);
