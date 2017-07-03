@@ -88,6 +88,8 @@ handleTrigger({NEW, OLD, TG_NAME}) {
 ...
 ```
 
+The name of the procedure in Postgres is snake-cased (underscore-separated) and is a concatenation of the key on the top-level `module.exports` with the name of the function as it is defined in Javascript. For example, with the above `Foo` code, a Postgres procedure would exist name `foo_hello(text)`.
+
 ### Type definitions
 
 A type is just a Postgres composite type that can be defined via Javascript decorators. The reason one might want to do this is so that their functions can take non-standard types without the type definition being external to the rest of the code.
