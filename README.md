@@ -62,7 +62,7 @@ class Foo {
 }
 ```
 
-First of all you may notice there is `console.log` support. If you've used PLV8 you are aware that you generally have to use `plv8.elog` instead. This project includes all the typical `console` functions wrapping `plv8.elog` (`log`, `info`, `warn`, `error`, and `debug`). This should make portability easier and logging not so much of a "wait what's the other syntax" concetration-breaking endeavor.
+First of all you may notice there is `console.log` support. If you've used PLV8 you are aware that you generally have to use `plv8.elog` instead. This project includes all the typical `console` functions wrapping `plv8.elog` (`log`, `info`, `warn`, `error`, and `debug`). This should make portability easier and logging not so much of a "wait what's the other syntax" concentration-breaking endeavor.
 
 Besides that though there is an ES7 decorator at the top of the function.
 
@@ -124,3 +124,5 @@ This isn't actually a Node environment so typical Browserify caveats apply. Nati
 Also, when installing new versions of your code, the installation will purposefully fail if it cannot delete types or procedures that are un-droppable (it will not `CASCADE` as that is more dangerous). The entire installation will fail, not just part.
 
 On the flipside, it goes without saying that if you break your business logic, your functions may install correctly and continue to be bound to the database calls you attached them to, but the results may get messed up if you broke something. This risk is similar to if you have a database trigger that you hot replace but the new trigger code is broken and is not related to PLV8 but should be kept in mind.
+
+Finally, one last fairly major potential gotcha is the fact that you will have to manually run reindexing if you alter the logic of the function. This is no different than if it's a regular PL/PGSQL function, but it should be noted. Function mutability in Postgres can cause inconsistent data states depending on what the function is used for and this is currently on the developer to handle. Regres does not handle any of this stuff, however it might trick you into feeling comfortable about agility without consequence, so beware.
